@@ -3,8 +3,6 @@
 
   var storageKey = "assembly_params"
 
-
-
   function previouslyStoredParams() {
     if (window.localStorage) {
       var storedParams = localStorage.getItem(storageKey);
