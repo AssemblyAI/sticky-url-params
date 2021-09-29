@@ -1,8 +1,6 @@
 (function () {
   'use strict';
 
-  
-
   var storageKey = "assembly_params"
 
   function previouslyStoredParams() {
