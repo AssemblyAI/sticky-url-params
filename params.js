@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  var storageKey = "assembly_params"
+  var storageKey = "assembly_snippet_params"
+  var whitelistedURLs = ["app.assemblyai.com", "docs.assemblyai.com"]
 
   function previouslyStoredParams() {
     if (window.localStorage) {
@@ -157,8 +158,10 @@
       // We then turn it into a string
       additionalParams = searchParamsString(search, "utm_");
 
-      // And then save them to local storage
-      storeParamsLocally(additionalParams);
+      if (additionalParams && additionalParams.length > 0) {
+        // And then save them to local storage
+        storeParamsLocally(additionalParams);
+      }
     }
 
     if (!additionalParams || typeof additionalParams !== 'string' || additionalParams.length <= 0) {
@@ -186,6 +189,14 @@
       }
     }
 
+    linksArray = linksArray.filter(link => {
+      var href = link.getAttribute('href')
+      if (!href) return false
+
+      var indexOfWhitelistedURL = whitelistedURLs.findIndex((whitelistedURL) => href.indexOf(whitelistedURL) > -1)
+      return indexOfWhitelistedURL > -1
+    });
+    
     // If there are no links available, ignore it
     if (!linksArray || linksArray.length <= 0) {
       return;
