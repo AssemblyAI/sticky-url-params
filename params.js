@@ -157,8 +157,10 @@
       // We then turn it into a string
       additionalParams = searchParamsString(search, "utm_");
 
-      // And then save them to local storage
-      storeParamsLocally(additionalParams);
+      if (additionalParams && additionalParams.length > 0) {
+        // And then save them to local storage
+        storeParamsLocally(additionalParams);
+      }
     }
 
     if (!additionalParams || typeof additionalParams !== 'string' || additionalParams.length <= 0) {
