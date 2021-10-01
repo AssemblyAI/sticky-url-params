@@ -30,6 +30,7 @@
     }
 
     var parsedSearch = search;
+    var hasParsedSearch = false;
 
     // If the browser supports URLSearchParams, use it and 
     // its toString() convenience method (which stripes the
@@ -46,7 +47,13 @@
         for (var [key, value] of searchParams) {
           if (key.startsWith(prefix)) {
             parsedSearch += key + '=' + value + '&'
+            hasParsedSearch = true
           }
+        }
+
+        // Removing the that last &
+        if (hasParsedSearch) {
+          parsedSearch = parsedSearch.slice(0, -1)
         }
       } else {
         parsedSearch = searchParams.toString()
@@ -88,7 +95,7 @@
 
         // If that param doesn't exist on lhs, add it to the final
         // search params
-        if (!lhsSearchParams.get(paramName)) {
+        if (paramName && !lhsSearchParams.get(paramName)) {
           urlSearchParamsResult.set(paramName, paramValue);
         }
       }
@@ -131,8 +138,10 @@
           continue;
         }
 
-        // Add the new param to the existing finalSearchParams
-        finalSearchParams = finalSearchParams + '&' + newParam;
+        if (newParam) {
+          // Add the new param to the existing finalSearchParams
+          finalSearchParams = finalSearchParams + '&' + newParam;
+        }
       }
       
       merged = finalSearchParams;
