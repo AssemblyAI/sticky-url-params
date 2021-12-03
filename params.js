@@ -23,7 +23,7 @@
   }
 
   // Get the raw string from a search string
-  function searchParamsString(search, prefix) {
+  function searchParamsString(search, prefixes) {
     // Sanity check
     if (!search || search.length <= 0 || typeof search !== 'string') {
       return;
@@ -43,9 +43,11 @@
       parsedSearch = ''
       var searchParams = new window.URLSearchParams(search);
 
-      if (prefix) {
+      if (prefixes) {
         for (var [key, value] of searchParams) {
-          if (key.startsWith(prefix)) {
+          const startsWith = prefixes.filter((prefix) => key.startsWith(prefix));
+          
+          if (startsWith.length > 0) {
             parsedSearch += key + '=' + value + '&'
             hasParsedSearch = true
           }
@@ -165,7 +167,7 @@
       var search = typeof location !== 'undefined' ? location.search : window.location.search;
       
       // We then turn it into a string
-      additionalParams = searchParamsString(search, "utm_");
+      additionalParams = searchParamsString(search, ["utm_", "ref"]);
 
       if (additionalParams && additionalParams.length > 0) {
         // And then save them to local storage
