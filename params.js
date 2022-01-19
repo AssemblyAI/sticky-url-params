@@ -1,8 +1,9 @@
 (function () {
-  'use strict';
+  "use strict";
 
-  var storageKey = "assembly_snippet_params"
-  var whitelistedURL = "assemblyai.com"
+  var storageKey = "assembly_snippet_params";
+  var whitelistedURL = "assemblyai.com";
+  var blacklistedSchema = "mailto";
 
   function previouslyStoredParams() {
     if (window.localStorage) {
@@ -23,40 +24,44 @@
   }
 
   // Get the raw string from a search string
-  function searchParamsString(search, prefix) {
+  function searchParamsString(search, prefixes) {
     // Sanity check
-    if (!search || search.length <= 0 || typeof search !== 'string') {
+    if (!search || search.length <= 0 || typeof search !== "string") {
       return;
     }
 
     var parsedSearch = search;
     var hasParsedSearch = false;
 
-    // If the browser supports URLSearchParams, use it and 
+    // If the browser supports URLSearchParams, use it and
     // its toString() convenience method (which stripes the
     // question mark from it)
     //
     // If the browser doesn't support it, check to see if
     // the string starts with a question mark -- if it does,
     // remove it. Otherwise, return the search params.
-    if (typeof window.URLSearchParams !== 'undefined') {
-      parsedSearch = ''
+    if (typeof window.URLSearchParams !== "undefined") {
+      parsedSearch = "";
       var searchParams = new window.URLSearchParams(search);
 
-      if (prefix) {
+      if (prefixes) {
         for (var [key, value] of searchParams) {
-          if (key.startsWith(prefix)) {
-            parsedSearch += key + '=' + value + '&'
-            hasParsedSearch = true
+          const startsWith = prefixes.filter((prefix) =>
+            key.startsWith(prefix)
+          );
+
+          if (startsWith.length > 0) {
+            parsedSearch += key + "=" + value + "&";
+            hasParsedSearch = true;
           }
         }
 
         // Removing the that last &
         if (hasParsedSearch) {
-          parsedSearch = parsedSearch.slice(0, -1)
+          parsedSearch = parsedSearch.slice(0, -1);
         }
       } else {
-        parsedSearch = searchParams.toString()
+        parsedSearch = searchParams.toString();
       }
     } else if (search.startsWith("?")) {
       parsedSearch = search.substring(1);
@@ -67,20 +72,22 @@
 
   // Merge two searches without duplicating params
   function mergeSearchParams(lhs, rhs) {
-    if (!lhs && !rhs) return '';
+    if (!lhs && !rhs) return "";
     if (!lhs) return rhs;
     if (!rhs) return lhs;
 
-    var merged = '';
+    var merged = "";
 
-    if (typeof window.URLSearchParams !== 'undefined') {
+    if (typeof window.URLSearchParams !== "undefined") {
       // If the browser supports URLSearchParams, use it.
 
       var lhsSearchParams = new window.URLSearchParams(lhs);
       var rhsSearchParams = new window.URLSearchParams(rhs);
 
       // We start with the left-hand side as our base
-      var urlSearchParamsResult = new window.URLSearchParams(lhsSearchParams.toString());
+      var urlSearchParamsResult = new window.URLSearchParams(
+        lhsSearchParams.toString()
+      );
 
       // Loop through the right-side
       for (var param of rhsSearchParams) {
@@ -91,7 +98,7 @@
 
         // Get the name and the value
         var paramName = param[0];
-        var paramValue = param.length > 1 ? param[1] : '';
+        var paramValue = param.length > 1 ? param[1] : "";
 
         // If that param doesn't exist on lhs, add it to the final
         // search params
@@ -120,12 +127,12 @@
 
         // Get the right-side name by splitting it on the "=" character
         var newParam = rhsSplit[i];
-        var newParamName = newParam.split('=')[0];
+        var newParamName = newParam.split("=")[0];
 
         // Loop through the left-side to make sure it doesn't exist there
         for (var j = 0; j < lhsSplit.length; j++) {
           var existingParam = lhsSplit[j];
-          var existingParamName = existingParam.split('=')[0];
+          var existingParamName = existingParam.split("=")[0];
 
           // If it exists, break the loop
           if (newParamName === existingParamName) {
@@ -140,10 +147,10 @@
 
         if (newParam) {
           // Add the new param to the existing finalSearchParams
-          finalSearchParams = finalSearchParams + '&' + newParam;
+          finalSearchParams = finalSearchParams + "&" + newParam;
         }
       }
-      
+
       merged = finalSearchParams;
     }
 
@@ -152,7 +159,7 @@
 
   // DOMContentLoaded, unlike onload, will fire only after the
   // DOM's been rendered and analyzed.
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener("DOMContentLoaded", function () {
     // Try getting the params from localStorage
     var prevParams = previouslyStoredParams();
 
@@ -162,10 +169,13 @@
       additionalParams = prevParams;
     } else {
       // We start by getting the current search (?param1=foo&param2=bar)
-      var search = typeof location !== 'undefined' ? location.search : window.location.search;
-      
+      var search =
+        typeof location !== "undefined"
+          ? location.search
+          : window.location.search;
+
       // We then turn it into a string
-      additionalParams = searchParamsString(search, "utm_");
+      additionalParams = searchParamsString(search, ["utm_", "ref"]);
 
       if (additionalParams && additionalParams.length > 0) {
         // And then save them to local storage
@@ -173,18 +183,22 @@
       }
     }
 
-    if (!additionalParams || typeof additionalParams !== 'string' || additionalParams.length <= 0) {
-      return
+    if (
+      !additionalParams ||
+      typeof additionalParams !== "string" ||
+      additionalParams.length <= 0
+    ) {
+      return;
     }
 
     // Listing all links available on the page
-    var linksCollection = document.getElementsByTagName('a');
+    var linksCollection = document.getElementsByTagName("a");
     var linksArray;
 
     // It can be an HTMLCollection, so we must make it an array
-    if (typeof Array.from !== 'undefined') {
+    if (typeof Array.from !== "undefined") {
       // If the browser supports Array.from, we call it just to
-      // be sure -- won't hurt. 
+      // be sure -- won't hurt.
       linksArray = Array.from(linksCollection);
     } else {
       // If the browser doesn't support it, we check if it's an
@@ -198,35 +212,36 @@
       }
     }
 
-    linksArray = linksArray.filter(link => {
-      var href = link.getAttribute('href')
-      if (!href) return false
+    linksArray = linksArray.filter((link) => {
+      var href = link.getAttribute("href");
+      if (!href) return false;
 
-      return href.indexOf(whitelistedURL) > -1
+      if (href.indexOf(blacklistedSchema) > -1) return false;
+      return href.indexOf(whitelistedURL) > -1;
     });
-    
+
     // If there are no links available, ignore it
     if (!linksArray || linksArray.length <= 0) {
       return;
     }
 
-    // Now that we know that the links are in an array, create 
+    // Now that we know that the links are in an array, create
     // a loop
     for (var i = 0; i < linksArray.length; i++) {
       var link = linksArray[i];
-      var href = link.getAttribute('href')
+      var href = link.getAttribute("href");
 
-      if (href && href.indexOf('#') > -1) {
+      if (href && href.indexOf("#") > -1) {
         continue;
       }
-      
-      // There are two pieces for every link: the base and the 
+
+      // There are two pieces for every link: the base and the
       // existing URL params
 
-      var linkBase = '';
-      var existingParams = '';
+      var linkBase = "";
+      var existingParams = "";
 
-      if (typeof window.URL !== 'undefined') {
+      if (typeof window.URL !== "undefined") {
         // If the browser supports URL object, create a new
         // instance and get the base and params from it.
 
@@ -244,8 +259,8 @@
         // the base. The rest, we consider to be the existing
         // params.
 
-        var href = link.getAttribute('href');
-        var split = href.split('?');
+        var href = link.getAttribute("href");
+        var split = href.split("?");
 
         if (split && split.length >= 1) {
           linkBase = split[0];
@@ -267,12 +282,17 @@
       }
 
       // One final sanity check
-      if (!finalParams || finalParams.length <= 0 || !linkBase || linkBase.length <= 0) {
+      if (
+        !finalParams ||
+        finalParams.length <= 0 ||
+        !linkBase ||
+        linkBase.length <= 0
+      ) {
         continue;
       }
 
       // Update the href attribute to the base + params
-      link.setAttribute("href", linkBase.concat('?', finalParams));
+      link.setAttribute("href", linkBase.concat("?", finalParams));
     }
   });
 })();
