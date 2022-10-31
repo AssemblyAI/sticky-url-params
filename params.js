@@ -2,7 +2,7 @@
   "use strict";
 
   var storageKey = "assembly_snippet_params";
-  var whitelistedURL = "assemblyai.com";
+  var whitelistedURLs = ["assemblyai.com", "calendly.com"];
   var blacklistedSchema = "mailto";
 
   function previouslyStoredParams() {
@@ -217,7 +217,12 @@
       if (!href) return false;
 
       if (href.indexOf(blacklistedSchema) > -1) return false;
-      return href.indexOf(whitelistedURL) > -1;
+
+      const foundIndex = whitelistedURLs.findIndex(
+        (url) => href.indexOf(url) > -1
+      );
+
+      return foundIndex > -1;
     });
 
     // If there are no links available, ignore it
